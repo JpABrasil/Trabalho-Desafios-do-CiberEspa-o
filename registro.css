@@ -1,0 +1,24 @@
+body{
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-family: 'Roboto',sans-serif;
+}
+h2{
+    font-family:'Roboto', sans-serif; 
+    font-weight: 700;
+    font-style: normal;
+    color: rgb(41, 41, 41);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+#labelx{
+    background-color: #126e51;
+    color: #ffe418;padding: 10px; 
+    border-radius: 5px;
+}
+#labelx:hover{
+    cursor: pointer;
+    background-color: #ffe418;
+    color:#126e51;
+    transition: 0.5s ease;
+}

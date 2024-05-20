@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="logo.png">
+    <title>bet365 - Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href ='registro.css'>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="sweetalert2.min.js"></script>
+    <link rel="stylesheet" href="sweetalert2.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+
+</head>
+<body style="background-color:rgb(41, 41, 41);width: 100%; height: 110vh;margin-top: 0;margin-bottom: 0;overflow-x: hidden;overflow-y: scroll;">
+    <div id="central-content" class="central-content" style="height: 100%; width: 76.15%; margin: auto;background-color: #ebeded; ">
+        <div class="topbar" style="background-color: #126e51; width: 100%;height: 5.25%;display: flex;align-items: center;">
+            <img src="logo.svg" style="margin-left:20px;">
+        </div>
+        <div class = 'formulario' style="margin: auto;height: fit-content;min-height: 200px;width: 34%;margin-top:40px; text-align: center;">
+            <h2>Login</h2>
+            <label for="cpf" style="width: 100%;display: block;font-size: 12px;margin-bottom: 5px;text-align: left;">Digite seu CPF</label>
+            <input id="cpf" style="width: 100%;height: 50px;border: none;border: 1px solid rgb(185, 185, 185);margin-bottom: 20px;" placeholder="CPF">
+            <label for="faceid" style="width: 100%;display: block;font-size: 12px;margin-bottom: 5px;text-align: left;">Verificação Facial</label>
+            <button id="faceid" style="margin-bottom:20px;width: 100%;height: 50px;border: none;border: 1px solid rgb(185, 185, 185);cursor: pointer;;background-color: #126e51;color: #ffffff;font-size: 16px;">Realizar Verificação Facial</button>
+            <video id="video-preview" style="display: block;border: 3px solid #126e51;width: 80%; height: 296px; margin: auto;"></video>
+        </div>
+    </div>
+</body>
+<script>
+    document.getElementById('faceid').addEventListener('click', function() {
+    var video = document.getElementById('video-preview');
+
+    // Solicita acesso à webcam
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(function(stream) {
+            // Exibe o vídeo da webcam
+            video.style.display = 'block';
+            video.srcObject = stream;
+            video.play();
+            var teste;
+            //Fecha a webcam após 5 segundos
+            setTimeout(function(){
+                document.getElementById('central-content').style.display = 'none'
+                Swal.fire({
+                    title: 'Verificação Facial',
+                    text: 'A sua identificação foi realizada com sucesso, estamos lhe redirecionando para a plataforma de apostas. Boa Sorte!',
+                    icon: 'success',
+                    confirmButton: 'OK'
+                }).then(function(result) {
+                    if (result.isConfirmed) {
+                        // Redireciona para a plataforma de apostas após o fechamento do alerta
+                        window.location.href = 'https://www.bet365.com/#/HO/';
+                    }
+                });
+            }, 5000);
+        })
+        
+            
+      
+        .catch(function(err) {
+            console.error('Erro ao acessar a webcam:', err);
+            alert('Erro ao acessar a webcam: ' + err.message);
+        });
+    });
+</script>
