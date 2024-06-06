@@ -202,23 +202,24 @@
             
             <label for="documento" style="width: 100%;display: block;font-size: 12px;margin-bottom: 15px;">Documento com Foto</label>
             <div class="custom-file-upload" style="margin-bottom: 40px;">
-                <input onchange='cadastrar()'  style='display: none' type="file" id="file-input">
+                <input onchange='treinar()'  style='display: none' type="file" id="file-input">
                 <label id ='labelx'for="file-input" >Escolher Arquivo</label>
             </div>
             <label for="btn-validacao" style="width: 100%;display: block;font-size: 12px;margin-bottom: 5px;">Validar Verificação facial</label>
             <div class="custom-file-upload" style="margin-bottom: 20px;">
-                <button onclick='validar()' id="btn-validacao" style ='background-color: #126e51;color: #ffffff;padding: 10px; border-radius: 5px; border: none;cursor: pointer;font-size: 18px;'>Validar Verificação Facial</button>
+                <button onclick='iniciarWebCam()' id="btn-validacao" style ='background-color: #126e51;color: #ffffff;padding: 10px; border-radius: 5px; border: none;cursor: pointer;font-size: 18px;'>Validar Verificação Facial</button>
             </div>
-            <video id="video-preview" style="display: block;border: 3px solid #126e51;width: 80%; height: 296px; margin: auto;"></video>
+            <video id="video-preview" style="position:absolute;display: none;border: 3px solid #126e51;width: 40%; height: 570px;top:30%;left:30%;z-index: 1001; "></video>
             
             <div style="width: 100%;text-align: center;">
                 <button id="btn_registro" style="margin: auto;background-color: #126e51;
                 color: #ffffff;padding: 10px; 
                 border-radius: 5px; border: none;cursor: pointer;width: 80%;font-size: 20px;">Registrar-se</button>
             </div>
-            
         </div>
     </div>
+    <div id="opacity" style="display:none;position:absolute;height: 120%;width: 100%;z-index: 1000;background-color:rgba(0, 0, 0, 0.70) ;top:0;left:0"></div>    
+            
 </body>
 </html>
 <script>
@@ -236,7 +237,6 @@
                     }
                 });
     })
-   
     
     function treinar(){
         var inputs = document.querySelectorAll('input, select');
@@ -272,10 +272,12 @@
                 console.error('Erro na requisição:', error);
             });
     }
-
-    function validar(){
-        var video = document.getElementById('video-preview');
-
+    
+    var video = document.getElementById('video-preview');
+   
+    function iniciarWebCam(){
+        document.getElementById('opacity').style.display = 'block'
+        video.style.display = 'block'
         // Solicita acesso à webcam
         navigator.mediaDevices.getUserMedia({ video: true })
             .then(function(stream) {
@@ -283,36 +285,60 @@
                 video.style.display = 'block';
                 video.srcObject = stream;
                 video.play();
-                setInterval(function() {
-                    // Captura um quadro da webcam
-                    var canvas = document.createElement('canvas');
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    var context = canvas.getContext('2d');
-                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                capturarWebCam();
 
-                    // Converte o quadro capturado para um blob
-                    canvas.toBlob(function(blob) {
-                        // Envia o blob para o backend via Fetch
-                        var formData = new FormData();
-                        formData.append('image', blob);
-
-                        fetch('http://localhost:5000/validar', {
-                            method: 'POST',
-                            body: formData
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            console.log('Resposta do servidor:', data);
-                        })
-                        .catch(error => {
-                            console.error('Erro ao enviar a imagem:', error);
-                        });
-                    }, 'image/jpeg'); // O formato do blob pode ser ajustado conforme necessário
-                }, 5000); // A captura de tela é feita a cada segundo (1000 ms)
             })
             .catch(function(error) {
                 console.error('Erro ao acessar a webcam:', error);
             });
     }        
+  
+    function capturarWebCam(){
+        validar()
+        .then(resultado => {
+            if (resultado !== 'sucesso') {
+                // Se o resultado não for 'sucesso', continua a captura de imagens
+                setTimeout(capturarWebCam, 5000); // Captura de tela a cada 5 segundos
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao validar:', error);
+        });
+    }
+    
+    function validar(){
+        return new Promise((resolve, reject) => {
+            primeiro_nome = document.getElementById('primeiro_nome').value
+            segundo_nome = document.getElementById('segundo_nome').value
+            var formData = new FormData();
+            formData.append('primeiro_nome', primeiro_nome);
+            formData.append('segundo_nome', segundo_nome);
+            // Captura um quadro da webcam
+            var canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            var context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Converte o quadro capturado para um blob
+            canvas.toBlob(function(blob) {
+                // Envia o blob para o backend via Fetch                           
+                formData.append('image', blob);                           
+                fetch('http://localhost:5000/validar', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Resposta do servidor:', data.success);
+                    resolve(data.success); // Resolve a promessa com o resultado do servidor
+                })
+                .catch(error => {
+                    console.error('Erro ao enviar a imagem:', error);
+                    reject(error); // Rejeita a promessa com o erro
+                });
+            }, 'image/jpeg');
+        });
+    }
 </script>

@@ -1,4 +1,4 @@
-import argparse
+#Bibliotecas
 import pickle
 from collections import Counter
 from pathlib import Path
@@ -9,6 +9,8 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import os
 from bancodedados import conect_db #Função para conectar ao banco
+from datetime import datetime
+
 #Configurações do Servidor
 app = Flask(__name__)
 CORS(app)
@@ -20,10 +22,6 @@ DEFAULT_ENCODINGS_PATH = Path("output/encodings.pkl")
 BOUNDING_BOX_COLOR = "blue"
 TEXT_COLOR = "white"
 
-
-#Função para conectar com o banco
-
-#Função para treinamento do Modelo
 def encode_known_faces(
     model: str = "hog", encodings_location: Path = DEFAULT_ENCODINGS_PATH
 ) -> None:
@@ -49,7 +47,7 @@ def encode_known_faces(
     with encodings_location.open(mode="wb") as f:
         pickle.dump(name_encodings, f)
 
-#Função para Reconhecimento de imagem desconhecida
+
 def recognize_faces(
     image_location: str,
     model: str = "hog",
@@ -84,9 +82,10 @@ def recognize_faces(
 
     del draw
     name = _recognize_face(unknown_encoding, loaded_encodings)
-    pillow_image.save(f'results/{name}.jpg')
+    pillow_image.show()
+    #pillow_image.save(f'results/{name}.jpg')
 
-#Função Auxiliar para encontrar a face que mais se adequa
+
 def _recognize_face(unknown_encoding, loaded_encodings):
     """
     Given an unknown encoding and all known encodings, find the known
@@ -103,7 +102,7 @@ def _recognize_face(unknown_encoding, loaded_encodings):
     if votes:
         return votes.most_common(1)[0][0]
 
-#Função Auxiliar para Desenhar Resultado na imagem
+
 def _display_face(draw, bounding_box, name):
     """
     Draws bounding boxes around faces, a caption area, and text captions.
@@ -124,9 +123,8 @@ def _display_face(draw, bounding_box, name):
         fill=TEXT_COLOR,
     )
 
-#Rotas de app
-@app.route("/treinamento", methods=['POST'])
-def treinamento():
+
+def salvar_documento():
     #Receber Inputs do Formulario 
     primeiro_nome = request.form.get('primeiro_nome')
     segundo_nome = request.form.get('segundo_nome') 
@@ -149,34 +147,18 @@ def treinamento():
         caminho_arquivo = os.path.join(destino, documento.filename)
         documento.save(caminho_arquivo)
         
-        #Realizar treinamento do modelo; OBS: Para efeitos de demonstração estamos realizando o treinamento em todas as fotos salvas no servidor, em caso dew aplicação será necessário otimizar essa rotina de treinamento
-        encode_known_faces()
-
         #Fechar Conexão
         cur.close()
         conn.close()
+        return('Documento Salvo')
 
+#Rotas de app
+@app.route("/treinamento", methods=['POST'])
+def treinamento():
+        encode_known_faces()
         #Retornar sucesso
         return jsonify({'success':True})
     
-    else: #Em caso de aplicação aqui barrariamos a continuação do processo
-        #Salvar Documento com foto em pasta com nome da pessoa
-        base='training'
-        destino = os.path.join(base,primeiro_nome + ' ' + segundo_nome)
-        if not os.path.exists(destino):
-            os.makedirs(destino)
-        caminho_arquivo = os.path.join(destino, documento.filename)
-        documento.save(caminho_arquivo)
-        
-        #Realizar treinamento do modelo; OBS: Para efeitos de demonstração estamos realizando o treinamento em todas as fotos salvas no servidor, em caso dew aplicação será necessário otimizar essa rotina de treinamento
-        encode_known_faces()
-
-        #Fechar Conexão
-        cur.close()
-        conn.close()
-
-        #Retornar sucesso
-        return jsonify({'success':True})
     
 @app.route("/cadastro", methods=['POST'])
 def cadastro():
@@ -203,8 +185,37 @@ def cadastro():
 
 @app.route("/validar", methods=['POST'])
 def validar():
-    documento = request.files['file-input']
-    recognize_faces
+    primeiro_nome = request.form.get('primeiro_nome')
+    segundo_nome = request.form.get('segundo_nome')
+    if 'image' not in request.files:
+        return jsonify({'success': False, 'message': 'Nenhuma imagem foi enviada'})
+
+    # Obtém o arquivo da solicitação
+    imagem = request.files['image']
+
+    # Verifica se o arquivo tem um nome
+    if imagem.filename == '':
+        return jsonify({'success': False, 'message': 'O arquivo não tem um nome válido'})
+
+    # Cria um diretório para salvar as imagens, se não existir
+    pasta_destino = os.path.join('validation',primeiro_nome + ' ' + segundo_nome)
+    if not os.path.exists(pasta_destino):
+        os.makedirs(pasta_destino)
+
+    # Gera um nome de arquivo único baseado na data e hora atual
+    nome_arquivo = datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '.jpg'
+
+    # Salva o arquivo na pasta de destino
+    caminho_arquivo = os.path.join(pasta_destino, nome_arquivo)
+    imagem.save(caminho_arquivo)
+    
+    #Valida se o frame cadastrado encontra algo
+    try:
+        recognize_faces(caminho_arquivo)
+        return jsonify({'success': True, 'message': 'Imagem salva com sucesso'})
+    except UnboundLocalError:
+        return jsonify({'success':'Não Encontrado'})
+    
 
         
 
